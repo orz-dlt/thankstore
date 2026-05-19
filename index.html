@@ -100,308 +100,9 @@
             box-shadow: 2px 5px 15px rgba(0,0,0,0.12);
             position: relative;
             box-sizing: border-box;
+            mix-blend-mode: multiply;
         }
 
-        /* 하단만 영수증 뜯긴 지그재그 효과 유지 */
-        .receipt-wrapper::after {
-            content: "";
-            position: absolute;
-            left: 0;
-            bottom: -6px;
-            width: 100%;
-            height: 6px;
-            background-size: 10px 10px;
-            background-image: linear-gradient(45deg, #f3f0e8 25%, transparent 25%), linear-gradient(315deg, #f3f0e8 25%, transparent 25%);
-        }
-
-        .receipt-header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .receipt-title {
-            font-size: 34px;
-            font-weight: bold;
-            margin: 0 0 10px 0;
-            word-break: break-all;
-            line-height: 1.2;
-            letter-spacing: 1px;
-            opacity: 0.9;
-        }
-
-        .receipt-meta {
-            font-size: 12px;
-            line-height: 1.5;
-            text-align: left;
-            margin-top: 15px;
-            opacity: 0.85;
-        }
-
-        .divider {
-            border-top: 1px dashed #333;
-            margin: 12px 0;
-            opacity: 0.7;
-        }
-
-        /* 테이블 스타일 */
-        .receipt-table {
-            width: 100%;
-            font-size: 13px;
-            border-collapse: collapse;
-            opacity: 0.9;
-        }
-
-        .receipt-table th {
-            text-align: left;
-            padding-bottom: 6px;
-        }
-
-        .receipt-table th.qty { text-align: right; width: 40px; }
-        .receipt-table td { padding: 5px 0; vertical-align: top; line-height: 1.3; }
-        .receipt-table td.qty { text-align: right; }
-        .receipt-table td.item { padding-right: 10px; word-break: break-all; }
-
-        .total-section {
-            font-size: 14px;
-            display: flex;
-            justify-content: space-between;
-            font-weight: bold;
-            padding: 3px 0;
-            opacity: 0.9;
-        }
-
-        .receipt-footer {
-            text-align: center;
-            margin-top: 30px;
-        }
-
-        .thanks-msg {
-            font-size: 12px;
-            margin-bottom: 15px;
-            letter-spacing: 1px;
-            opacity: 0.85;
-        }
-
-        .barcode-container {
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            height: 45px;
-            width: 85%;
-            margin: 0 auto 5px auto;
-            opacity: 0.85;
-        }
-        
-        .barcode-bar {
-            background-color: #222;
-            height: 100%;
-        }
-
-        .barcode-num {
-            font-size: 11px;
-            letter-spacing: 2px;
-            opacity: 0.8;
-        }
-    </style>
-</head>
-<body>
-
-    <h3 style="margin: 10px 0 20px 0; color: #333; letter-spacing: -0.5px;">🧾 모바일 감사영수증 메이커</h3>
-
-    <div class="container">
-        <div class="input-panel">
-            <div class="input-group">
-                <label for="store-name-input">상점명 수정</label>
-                <input type="text" id="store-name-input" value="THANKSTORE" oninput="updateReceipt()">
-            </div>
-
-            <div class="input-group">
-                <label for="date-input">영수증 날짜 선택</label>
-                <input type="date" id="date-input" onchange="handleDateChange()">
-            </div>
-            
-            <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 6px;">오늘의 감사 기록</label>
-            <div class="item-input-list" id="item-input-container">
-                </div>
-            <button class="btn-add" onclick="addItemRow()">+ 항목 추가하기</button>
-
-            <button class="btn-save" onclick="saveAsImage()">🖼️ 영수증 이미지 저장</button>
-            <button class="btn-notion" onclick="copyForNotion()">🚀 노션 공유 문법 복사</button>
-        </div>
-
-        <div class="receipt-wrapper" id="receipt-target">
-            <div class="receipt-header">
-                <div class="receipt-title" id="receipt-title-view">THANKSTORE</div>
-                <div class="receipt-meta">
-                    <span id="receipt-order-id">ORDER #0001</span><br>
-                    <span id="receipt-date-view">TUESDAY, MAY 19, 2026</span>
-                </div>
-            </div>
-
-            <div class="divider"></div>
-
-            <table class="receipt-table">
-                <thead>
-                    <tr>
-                        <th style="width: 25px;">NO</th>
-                        <th>ITEM</th>
-                        <th class="qty">QTY</th>
-                    </tr>
-                </thead>
-                <tbody id="receipt-items-view">
-                    </tbody>
-            </table>
-
-            <div class="divider"></div>
-            
-            <div class="total-section">
-                <span>ITEM COUNT:</span>
-                <span id="total-count-view">0</span>
-            </div>
-            <div class="total-section" style="font-size: 16px;">
-                <span>TOTAL:</span>
-                <span id="total-qty-view">0</span>
-            </div>
-
-            <div class="divider"></div>
-            
-            <div class="receipt-footer">
-                <div class="thanks-msg">THANK YOU FOR MY LIFE!</div>
-                <div class="barcode-container" id="barcode-view"></div>
-                <div class="barcode-num" id="barcode-num-view">0000 0000 0000</div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let items = [
-            "오늘 마신 시원한 아메리카노",
-            "지하철 바로 자리에 앉아 온 일",
-            "생각보다 날씨가 선선했던 것"
-        ];
-
-        window.onload = function() {
-            const today = new Date();
-            const yyyy = today.getFullYear();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const dd = String(today.getDate()).padStart(2, '0');
-            document.getElementById('date-input').value = `${yyyy}-${mm}-${dd}`;
-
-            refreshDateAndBarcode(today);
-            renderInputRows();
-            updateReceipt();
-        };
-
-        function handleDateChange() {
-            const dateValue = document.getElementById('date-input').value;
-            if(!dateValue) return;
-            
-            const targetDate = new Date(dateValue);
-            refreshDateAndBarcode(targetDate);
-        }
-
-        function refreshDateAndBarcode(dateObj) {
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('receipt-date-view').innerText = dateObj.toLocaleDateString('en-US', options).toUpperCase();
-            
-            const monthStr = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const dateStr = String(dateObj.getDate()).padStart(2, '0');
-            const year = dateObj.getFullYear();
-            
-            document.getElementById('receipt-order-id').innerText = `ORDER #00${monthStr}`;
-
-            const seedNum = parseInt(`${year}${monthStr}${dateStr}`);
-            const rand4 = Math.floor(((seedNum * 9301 + 49297) % 233280) / 233280 * 9000 + 1000); 
-            document.getElementById('barcode-num-view').innerText = `${year} ${monthStr}${dateStr} ${rand4}`;
-
-            const barcodeContainer = document.getElementById('barcode-view');
-            barcodeContainer.innerHTML = ''; 
-
-            const barPattern = [2, 1, 3, 1, 4, 2, 1, 2, 1, 3, 1, 4, 1, 2, 3, 2, 1, 1, 4, 2, 1, 3, 1, 2, 4, 1, 2, 3];
-            const randomFactor = (dateObj.getDate() + dateObj.getMonth()) % barPattern.length;
-            
-            for (let i = 0; i < 26; i++) {
-                const bar = document.createElement('div');
-                bar.className = 'barcode-bar';
-                
-                let thickness = barPattern[(i + randomFactor) % barPattern.length];
-                bar.style.width = `${thickness}px`;
-                
-                const margin = ((i * rand4) % 2) + 1;
-                bar.style.marginRight = `${margin}px`;
-                
-                barcodeContainer.appendChild(bar);
-            }            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .input-group {
-            margin-bottom: 15px;
-        }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: bold;
-            font-size: 14px;
-        }
-
-        .input-panel input[type="text"], 
-        .input-panel input[type="date"] {
-            width: 100%;
-            height: 42px; 
-            padding: 0 10px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-family: inherit;
-            font-size: 14px;
-        }
-
-        .item-input-list {
-            max-height: 250px;
-            overflow-y: auto;
-            margin-bottom: 12px;
-        }
-
-        .item-input-row {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 8px;
-            align-items: center;
-        }
-
-        button {
-            font-family: inherit;
-            cursor: pointer;
-            border: none;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-
-        .btn-add { background: #4caf50; color: white; width: 100%; height: 44px; margin-bottom: 15px; font-size: 14px; }
-        .btn-del { background: #f44336; color: white; width: 42px; height: 42px; font-size: 14px; flex-shrink: 0; }
-        .btn-save { background: #2196f3; color: white; width: 100%; height: 48px; margin-bottom: 8px; font-size: 15px; }
-        .btn-notion { background: #000000; color: white; width: 100%; height: 48px; font-size: 15px; }
-
-        /* 2. 하단: 영수증 프리뷰 (구겨진 종이 배경 적용) */
-        .receipt-wrapper {
-            /* 언스플래시의 실제 고해상도 영수증/구겨진 종이 텍스처 사용 */
-            background-image: url('https://images.unsplash.com/photo-1586075010923-2dd4570fb338?q=80&w=600&auto=format&fit=crop');
-            background-size: cover;
-            background-position: center;
-            width: 100%;
-            padding: 35px 24px;
-            box-shadow: 2px 5px 15px rgba(0,0,0,0.12);
-            position: relative;
-            box-sizing: border-box;
-            mix-blend-mode: multiply; /* 텍스처 대비를 위해 살짝 조절 */
-        }
-
-        /* 상단 지그재그 제거, 하단만 영수증 뜯긴 지그재그 효과 유지 */
         .receipt-wrapper::after {
             content: "";
             position: absolute;
@@ -573,7 +274,7 @@
     </div>
 
     <script>
-        // 기본 감사 리스트 세팅
+        // 기본 구성 데이터 보존
         let items = [
             "오늘 마신 시원한 아메리카노",
             "지하철 바로 자리에 앉아 온 일",
@@ -581,7 +282,6 @@
         ];
 
         window.onload = function() {
-            // 오늘 날짜로 input date 초기값 세팅
             const today = new Date();
             const yyyy = today.getFullYear();
             const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -593,7 +293,6 @@
             updateReceipt();
         };
 
-        // 날짜 인풋 변경 시 작동하는 함수
         function handleDateChange() {
             const dateValue = document.getElementById('date-input').value;
             if(!dateValue) return;
@@ -602,7 +301,6 @@
             refreshDateAndBarcode(targetDate);
         }
 
-        // 날짜와 바코드를 해당 날짜 기준으로 새로고침
         function refreshDateAndBarcode(dateObj) {
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             document.getElementById('receipt-date-view').innerText = dateObj.toLocaleDateString('en-US', options).toUpperCase();
@@ -613,12 +311,10 @@
             
             document.getElementById('receipt-order-id').innerText = `ORDER #00${monthStr}`;
 
-            // 선택한 날짜에 맞춰 바코드 숫자 스탬핑
             const seedNum = parseInt(`${year}${monthStr}${dateStr}`);
             const rand4 = Math.floor(((seedNum * 9301 + 49297) % 233280) / 233280 * 9000 + 1000); 
             document.getElementById('barcode-num-view').innerText = `${year} ${monthStr}${dateStr} ${rand4}`;
 
-            // 그날만의 고유 바코드 바 그래픽 조립
             const barcodeContainer = document.getElementById('barcode-view');
             barcodeContainer.innerHTML = ''; 
 
@@ -639,7 +335,6 @@
             }
         }
 
-        // 입력창 리스트 그리기
         function renderInputRows() {
             const container = document.getElementById('item-input-container');
             container.innerHTML = '';
@@ -679,7 +374,6 @@
             updateReceipt();
         }
 
-        // 영수증 화면 실시간 동기화
         function updateReceipt() {
             const storeName = document.getElementById('store-name-input').value;
             document.getElementById('receipt-title-view').innerText = storeName || "THANKSTORE";
@@ -705,14 +399,13 @@
             document.getElementById('total-qty-view').innerText = validCount;
         }
 
-        // 🖼️ 고화질 이미지 캡처 저장 (종이 질감 보존)
         function saveAsImage() {
             const target = document.getElementById('receipt-target');
             
             html2canvas(target, {
                 backgroundColor: '#e0e0e0',
-                scale: 3, // 화질 대폭 상승 기법
-                useCORS: true, // 외부 종이 질감 이미지를 안전하게 로드해와 캡처하기 위함
+                scale: 3, 
+                useCORS: true, 
                 allowTaint: true
             }).then(canvas => {
                 const link = document.createElement('a');
@@ -722,25 +415,26 @@
             });
         }
 
-        // 🚀 노션 마크다운 서식 복사
+        // 🚀 노션 서식 충돌 버그 수정완료 영역
         function copyForNotion() {
             const storeName = document.getElementById('store-name-input').value || "THANKSTORE";
             const dateStr = document.getElementById('receipt-date-view').innerText;
             
+            // 글머리 기호 서식(-)을 빼고 인용문(>) 내부에 숫자 텍스트를 바로 배치하여 이중 리스트 생성을 막음
             let markdown = `>> 🧾 **${storeName} (${dateStr})**\n`;
             let count = 0;
             
             items.forEach((item) => {
                 if(item.trim() !== "") {
                     count++;
-                    markdown += `> - ${String(count).padStart(2, '0')}. ${item} (QTY: 1)\n`;
+                    markdown += `> ${String(count).padStart(2, '0')}. ${item} (QTY: 1)\n`;
                 }
             });
             
             markdown += `> \n> **TOTAL ITEMS: ${count}** 🤍`;
 
             navigator.clipboard.writeText(markdown).then(() => {
-                alert("복사 성공! 노션에 붙여넣으면 토글 서식으로 이쁘게 정렬됩니다.");
+                alert("복사 성공! 노션에 깔끔하게 연동됩니다.");
             }).catch(() => {
                 alert("복사에 실패했습니다.");
             });
